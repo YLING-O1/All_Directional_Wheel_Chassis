@@ -2,8 +2,8 @@
 // Created by 34285 on 2026/7/16.
 //
 
-#ifndef ALL_DIRECTIONAL_WHEEL_CHASSIS_ALG_ZERO_RADIUS_TURN_H
-#define ALL_DIRECTIONAL_WHEEL_CHASSIS_ALG_ZERO_RADIUS_TURN_H
+#ifndef ALL_DIRECTIONAL_WHEEL_CHASSIS_ALG_SPIN_TOP_H
+#define ALL_DIRECTIONAL_WHEEL_CHASSIS_ALG_SPIN_TOP_H
 
 #include "alg_omni_wheel_chassis.h"
 
@@ -11,7 +11,7 @@
 typedef struct
 {
     float spin_omega;      // 小陀螺目标自转角速度 (单位: rad/s，决定陀螺转速)
-    float feedforward_k;   // 延迟补偿前馈系数 k (单位: s，课件参考值为 0.007)
+    float feedforward_k;   // 延迟补偿前馈系数 k (单位: s)
 } Struct_Spin_Top_Config;
 
 void Calculate_Spin_Top_Target_Velocity(const Struct_Spin_Top_Config* config,
@@ -20,4 +20,4 @@ void Calculate_Spin_Top_Target_Velocity(const Struct_Spin_Top_Config* config,
                                         float current_chassis_omega,
                                         Struct_Target_Velocity* chassis_target_vel);
 
-#endif //ALL_DIRECTIONAL_WHEEL_CHASSIS_ALG_ZERO_RADIUS_TURN_H
+#endif //ALL_DIRECTIONAL_WHEEL_CHASSIS_ALG_SPIN_TOP_H
