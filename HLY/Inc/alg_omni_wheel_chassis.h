@@ -1,0 +1,103 @@
+//
+// Created by 34285 on 2026/7/7.
+//
+
+#ifndef ALL_DIRECTIONAL_WHEEL_CHASSIS_OMNI_WHEEL_CHASSIS_H
+#define ALL_DIRECTIONAL_WHEEL_CHASSIS_OMNI_WHEEL_CHASSIS_H
+
+#include "alg_rotation_matrix.h"
+
+//定义 sqrt(2)/2 常量，对应全向轮 45 度的安装夹角
+#define SQRT_2_OVER_2 0.70710678f
+//重力加速度常量
+#define GRAVITY_CONSTANT 9.81f
+
+//4轮X型全向底盘物理参数
+typedef struct
+{
+    float r_center;  //机器人中心到车轮中心的距离 (单位: m)
+    float R;         //车轮半径 (单位: m)
+    float max_omega; //电机最大允许角速度 (单位: rad/s)，用于防饱和限幅
+    float max_torque;//电机最大允许扭矩 (单位: N·m)，用于动态力矩防饱和限幅
+}Struct_Chassis_Config;
+
+// 底盘目标控制量
+typedef struct
+{
+    float v_vector;  //底盘速度矢量
+    float vx;        //横向平动速度 (单位: m/s，向右为正)
+    float vy;        //纵向平动速度 (单位: m/s，向前为正)
+    float omega;     //自转角速度 (单位: rad/s，逆时针为正)
+}Struct_Target_Velocity;
+
+//底盘目标受力与力矩 (通常由 PID 或 MPC 控制器计算得出)
+typedef struct
+{
+    float Fx;        //横向期望受力 (单位: N，向右为正)
+    float Fy;        //纵向期望受力 (单位: N，向前为正)
+    float Mz;        //期望自转力矩 (单位: N·m，逆时针为正)
+}Struct_Target_Force;
+
+//车轮输出角速度
+typedef struct
+{
+    float LF;        //左前轮
+    float LB;        //左后轮
+    float RB;        //右后轮
+    float RF;        //右前轮
+}Struct_Wheel_Velocity;
+
+//车轮输出目标扭矩
+typedef struct
+{
+    float LF;        //左前轮电机扭矩 (单位: N·m)
+    float LB;        //左后轮电机扭矩 (单位: N·m)
+    float RB;        //右后轮电机扭矩 (单位: N·m)
+    float RF;        //右前轮电机扭矩 (单位: N·m)
+} Struct_Wheel_Torque;
+
+//阻力扭矩补偿参数结构体 - 低配版
+typedef struct
+{
+    float t;                    // 标定的恒定阻力扭矩补偿值
+    float continuous_threshold; // 一阶连续化的角速度阈值 (如 1.0 rad/s)
+} Struct_Resistance_Config_Low;
+
+//阻力扭矩补偿参数结构体 - 高配版
+typedef struct
+{
+    float a0;                   // 二次多项式常数项
+    float a1;                   // 二次多项式一次项系数
+    float a2;                   // 二次多项式二次项系数
+    float continuous_threshold; // 一阶连续化的角速度阈值 (如 1.0 rad/s)
+    float limit_threshold;      // 前馈限幅的角速度阈值 (如 30.0 rad/s)
+} Struct_Resistance_Config_High;
+
+void Omni_Wheel_Inverse_Kinematics(const Struct_Chassis_Config* config, const Struct_Target_Velocity* target,
+                                   Struct_Wheel_Velocity* output);
+void Omni_Wheel_Inverse_Dynamics(const Struct_Chassis_Config* config, const Struct_Target_Force* target_force,
+                                 Struct_Wheel_Torque* output_torque);
+
+void Calculate_Uphill_Feedforward_Torque(const Struct_Chassis_Config* config,
+                                         Struct_IMU_Data* imu_data,
+                                         float total_mass,
+                                         Struct_Wheel_Torque* feedforward_torque);
+void Calculate_Uphill_Feedforward_Torque_High_End(const Struct_Chassis_Config* config,
+                                                  Struct_IMU_Data* imu_data,
+                                                  float total_mass,
+                                                  float cog_height,
+                                                  float max_f,
+                                                  Struct_Wheel_Torque* feedforward_torque);
+
+static float Math_Sign(float val);
+static float Calc_Low_End_Single_Wheel(float omega, float t, float cont_th);
+static float Calc_High_End_Single_Wheel(float omega, float a0, float a1, float a2, float cont_th, float limit_th);
+void Calculate_Resistance_Compensation_Low_End(const Struct_Resistance_Config_Low* config,
+                                               const Struct_Wheel_Velocity* target_omega,
+                                               Struct_Wheel_Torque* comp_torque);
+void Calculate_Resistance_Compensation_High_End(const Struct_Resistance_Config_High* config,
+                                                const Struct_Wheel_Velocity* target_omega,
+                                                Struct_Wheel_Torque* comp_torque);
+
+
+#endif //ALL_DIRECTIONAL_WHEEL_CHASSIS_OMNI_WHEEL_CHASSIS_H
