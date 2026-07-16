@@ -49,8 +49,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         HLY/Src/alg_queue.c
         HLY/Inc/alg_timer.h
         HLY/Src/alg_timer.c
-        HLY/Inc/alg_zero_radius_turn.h
-        HLY/Src/alg_zero_radius_turn.c
+        HLY/Inc/alg_spin_top.h
+        HLY/Src/alg_spin_top.c
         HLY/Inc/alg_torque_compensation.h
         HLY/Src/alg_torque_compensation.c
 )
