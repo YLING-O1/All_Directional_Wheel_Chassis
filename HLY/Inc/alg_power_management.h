@@ -75,6 +75,7 @@ typedef struct
     Struct_Split_Motor_State RF;
 }Struct_Chassis_Split_Motors_State;
 
+//电机功率模型
 void Power_Control_Init(Struct_Power_Control* power_ctrl,
                         const Struct_Power_Estimate_Config* est_config,
                         float pid_kp, float pid_ki, float pid_kd, float pid_dt);
@@ -86,6 +87,7 @@ float Calculate_Power_Attenuation_Factor(Struct_Power_Control* power_ctrl,
                                          float referee_limit_power,
                                          const Struct_Chassis_Motors_State* motors_state);
 
+//功率控制
 void Maclaurin_Power_Control_Init(Struct_Maclaurin_Power_Control* power_ctrl,
                                   const Struct_Maclaurin_Estimate_Config* est_config,
                                   float pid_kp, float pid_ki, float pid_kd, float pid_dt);

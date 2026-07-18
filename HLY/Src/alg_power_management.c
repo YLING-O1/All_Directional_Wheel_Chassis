@@ -29,7 +29,7 @@ void Power_Control_Init(Struct_Power_Control* power_ctrl,
 /**
  * @brief 底盘单电机功率估计值计算
  *
- * 基于电机的当前电流和速度值估算其消耗的电功率。
+ * 基于电机的当前电流和速度值估算其消耗的电功率
  *
  * @param config 功率估计参数
  * @param state 电机当前状态（电流和角速度）
@@ -41,7 +41,7 @@ float Estimate_Single_Motor_Power(const Struct_Power_Estimate_Config* config,
     // 机械功率项 (正比于 转速 * 扭矩电流 的绝对值，考虑发电机效应则可能需要分象限讨论，这里取最稳妥的绝对值累加)
     float mech_power = config->k1 * fabsf(state->omega * state->current);
 
-    // 热损耗项 (正比于 电流的平方，I^2 * R)
+    // 热损耗项 (正比于电流的平方，I^2 * R)
     float heat_power = config->k2 * state->current * state->current;
 
     // 总估计功率
@@ -334,6 +334,13 @@ static float Math_Solve_Eta(float a, float b, float c)
 
 /**
 * @brief 衰减电流法(标准):整体衰减所有电流项 (Maclaurin 模型)
+*
+* @param power_ctrl 功率控制结构体指针
+* @param max_power 最大功率限制
+* @param current_power 当前功率
+* @param referee_limit_power 裁判系统限制功率
+* @param motors_state 底盘电机状态结构体指针
+* @return float 返回衰减系数
 */
 float Calculate_Maclaurin_Current_Attenuation(Struct_Maclaurin_Power_Control* power_ctrl,
                                               float max_power,
@@ -383,6 +390,13 @@ float Calculate_Maclaurin_Current_Attenuation(Struct_Maclaurin_Power_Control* po
 
 /**
 * @brief 衰减电流法(特殊情况):单独衰减动力学解算部分,保留其他补偿部分
+*
+* @param power_ctrl 功率控制结构体指针
+* @param max_power 最大功率限制
+* @param current_power 当前功率
+* @param referee_limit_power 裁判系统限制功率
+* @param split_motors_state 分离式底盘电机状态结构体指针
+* @return float 返回衰减系数
 */
 float Calculate_Maclaurin_Special_Current_Attenuation(Struct_Maclaurin_Power_Control* power_ctrl,
                                                       float max_power,
