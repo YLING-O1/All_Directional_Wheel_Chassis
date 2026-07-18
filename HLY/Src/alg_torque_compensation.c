@@ -8,7 +8,7 @@
  *
  * @param config 底盘物理参数结构体指针
  * @param imu_data 底盘IMU数据结构体指针
- * @param total_mass 整车总质量 (单位: kg)，即课件中的 m
+ * @param total_mass 整车总质量 (单位: kg)
  * @param feedforward_torque 解算后输出的四轮电机扭矩前馈量
  */
 void Calculate_Uphill_Feedforward_Torque(const Struct_Chassis_Config* config,
@@ -35,7 +35,7 @@ void Calculate_Uphill_Feedforward_Torque(const Struct_Chassis_Config* config,
     feedforward_force.Fx = f_magnitude * sinf(alpha);
     feedforward_force.Fy = f_magnitude * cosf(alpha);
 
-    // 像底盘解算那一节一样，把 f 当作底盘目标牵引力，而底盘目标转矩为0
+    // 把 f 当作底盘目标牵引力，而底盘目标转矩为0
     feedforward_force.Mz = 0.0f;
 
     // 4. 通过动力学逆解算，得出上坡扭矩前馈
@@ -47,8 +47,8 @@ void Calculate_Uphill_Feedforward_Torque(const Struct_Chassis_Config* config,
  *
  * @param config 底盘物理参数结构体指针
  * @param imu_data 底盘IMU数据结构体指针
- * @param total_mass 整车总质量 (单位: kg)，即课件中的 m
- * @param cog_height 重心高度 (单位: m)，即课件中的 h
+ * @param total_mass 整车总质量 (单位: kg)
+ * @param cog_height 重心高度 (单位: m)
  * @param max_f 限制的最大补偿力 (单位: N)，用于防止某些特殊位姿时疯车
  * @param feedforward_torque 解算后输出的四轮电机扭矩前馈量
  */
@@ -143,7 +143,7 @@ void Calculate_Uphill_Feedforward_Torque_High_End(const Struct_Chassis_Config* c
 }
 
 /**
- * @brief 符号函数 sgn(x)
+ * @brief 符号函数 sgn(x)，判断正负
  */
 static float Math_Sign(float val)
 {
@@ -154,6 +154,15 @@ static float Math_Sign(float val)
 
 /**
  * @brief 计算单轮低配版阻力补偿扭矩 (内部调用)
+ *
+ * @param omega 轮子目标角速度 (rad/s)
+ * @param t 阻力补偿恒定扭矩 (N·m),需要提前测好，给电机很小的平动速度(如0.1rad/s)看电机的电流反馈值
+ * @param cont_th 一阶连续化的角速度阈值 (rad/s);
+ *                将 cont_th 设置为 1.0 rad/s,（电机抽搐 / 高频抖动）：说明在零点附近的前馈扭矩变化依然太剧烈,
+ *                增大 cont_th（例如尝试 1.5 rad/s, 2.0 rad/s），让过渡区间更宽，力矩变化更平滑;
+ *                (起步困难 / 响应迟钝)：如果在极低速指令下，电机“嗡嗡”响但不转，或者推动摇杆后底盘明显要“愣”一下才走,
+ *                减小 cont_th（例如尝试 0.8 rad/s, 0.5 rad/s），让前馈扭矩更快、更陡峭地介入;
+ * @return float 计算出的单轮阻力补偿扭矩 (N·m)
  */
 static float Calc_Low_End_Single_Wheel(float omega, float t, float cont_th)
 {
@@ -163,7 +172,7 @@ static float Calc_Low_End_Single_Wheel(float omega, float t, float cont_th)
     if (abs_omega <= cont_th && cont_th > 0.0f)
     {
         // 零点振荡：一阶连续化，用一段正比例函数贴合
-        torque = (t / cont_th) * abs_omega;
+        torque = t / cont_th * abs_omega;
     }
     else
     {
@@ -176,6 +185,24 @@ static float Calc_Low_End_Single_Wheel(float omega, float t, float cont_th)
 
 /**
  * @brief 计算单轮高配版阻力补偿扭矩 (内部调用)
+ *
+ * @param omega 轮子目标角速度 (rad/s)
+ * @param a0 二次多项式常数项
+ * @param a1 二次多项式一次项系数
+ * @param a2 二次多项式二次项系数
+ *           分别是拟合阻力补偿曲线T = a0 + a1*|w| + a2*w^2 的常数项、一次项系数和二次项系数
+ *           需通过下地实际测试和二阶最小二乘法计算得出。将底盘放在平地上（材质接近官方场地地胶）。给底盘若干个典型的平动目标速度
+ *           （例如 0.1m/s, 0.2m/s, 0.5m/s, 0.8m/s, 1.2m/s, 1.5m/s, 1.8m/s, 2m/s等）。记录在每个目标速度下
+ *            底盘匀速运动时各个电机的反馈电流值。利用数学软件（如 MATLAB、Excel 或 Python）对收集到的“反馈电流值 - 目标角速度”
+ *            数据对进行二次最小二乘法回归分析，得出一条拟合曲线，直接获取对应的 a0, a1, a2 系数
+ * @param cont_th 一阶连续化的角速度阈值 (rad/s)
+*                 将 cont_th 设置为 1.0 rad/s,（电机抽搐 / 高频抖动）：说明在零点附近的前馈扭矩变化依然太剧烈,
+ *                增大 cont_th（例如尝试 1.5 rad/s, 2.0 rad/s），让过渡区间更宽，力矩变化更平滑;
+ *                (起步困难 / 响应迟钝)：如果在极低速指令下，电机“嗡嗡”响但不转，或者推动摇杆后底盘明显要“愣”一下才走,
+ *                减小 cont_th（例如尝试 0.8 rad/s, 0.5 rad/s），让前馈扭矩更快、更陡峭地介入;
+ * @param limit_th 前馈限幅的角速度阈值 (rad/s),需要评估你的电机最高工作转速，将其设置在一个合理的高速区间，确保前馈补偿不会超出电机的
+ *                 最大承受电流或合理控制范围
+ * @return float 计算出的单轮阻力补偿扭矩 (N·m)
  */
 static float Calc_High_End_Single_Wheel(float omega, float a0, float a1, float a2, float cont_th, float limit_th)
 {
@@ -188,7 +215,7 @@ static float Calc_High_End_Single_Wheel(float omega, float a0, float a1, float a
         // 1. 先算出连续化边界点 cont_th 处的前馈扭矩值
         float t_boundary = a0 + a1 * cont_th + a2 * cont_th * cont_th;
         // 2. 线性比例贴合
-        torque = (t_boundary / cont_th) * abs_omega;
+        torque = t_boundary / cont_th * abs_omega;
     }
     else if (abs_omega >= limit_th)
     {
@@ -209,19 +236,19 @@ static float Calc_High_End_Single_Wheel(float omega, float a0, float a1, float a
  *
  * @param config 低配版阻力补偿物理参数
  * @param target_omega 底盘逆运动学解算出的四轮目标角速度
- * @param comp_torque 解算后输出的四轮阻力补偿扭矩 (注意: 最终需乘以扭矩转电流系数才能输入给电机)
+ * @param output_torque 解算后输出的四轮阻力补偿扭矩 (注意: 最终需乘以扭矩转电流系数才能输入给电机)
  */
 void Calculate_Resistance_Compensation_Low_End(const Struct_Resistance_Config_Low* config,
-                                               const Struct_Wheel_Velocity* target_omega,
-                                               Struct_Wheel_Torque* comp_torque)
+                                                const Struct_Wheel_Velocity* target_omega,
+                                                Struct_Wheel_Torque* output_torque)
 {
-    comp_torque->LF = Calc_Low_End_Single_Wheel(target_omega->LF, config->t,
+    output_torque->LF = Calc_Low_End_Single_Wheel(target_omega->LF, config->t,
                       config->continuous_threshold);
-    comp_torque->LB = Calc_Low_End_Single_Wheel(target_omega->LB, config->t,
+    output_torque->LB = Calc_Low_End_Single_Wheel(target_omega->LB, config->t,
                       config->continuous_threshold);
-    comp_torque->RB = Calc_Low_End_Single_Wheel(target_omega->RB, config->t,
+    output_torque->RB = Calc_Low_End_Single_Wheel(target_omega->RB, config->t,
                       config->continuous_threshold);
-    comp_torque->RF = Calc_Low_End_Single_Wheel(target_omega->RF, config->t,
+    output_torque->RF = Calc_Low_End_Single_Wheel(target_omega->RF, config->t,
                       config->continuous_threshold);
 }
 
@@ -230,18 +257,18 @@ void Calculate_Resistance_Compensation_Low_End(const Struct_Resistance_Config_Lo
  *
  * @param config 高配版阻力补偿曲线参数及限幅阈值
  * @param target_omega 底盘逆运动学解算出的四轮目标角速度
- * @param comp_torque 解算后输出的四轮阻力补偿扭矩 (注意: 最终需乘以扭矩转电流系数才能输入给电机)
+ * @param output_torque 解算后输出的四轮阻力补偿扭矩 (注意: 最终需乘以扭矩转电流系数才能输入给电机)
  */
 void Calculate_Resistance_Compensation_High_End(const Struct_Resistance_Config_High* config,
                                                 const Struct_Wheel_Velocity* target_omega,
-                                                Struct_Wheel_Torque* comp_torque)
+                                                Struct_Wheel_Torque* output_torque)
 {
-    comp_torque->LF = Calc_High_End_Single_Wheel(target_omega->LF, config->a0, config->a1, config->a2,
+    output_torque->LF = Calc_High_End_Single_Wheel(target_omega->LF, config->a0, config->a1, config->a2,
                       config->continuous_threshold, config->limit_threshold);
-    comp_torque->LB = Calc_High_End_Single_Wheel(target_omega->LB, config->a0, config->a1, config->a2,
+    output_torque->LB = Calc_High_End_Single_Wheel(target_omega->LB, config->a0, config->a1, config->a2,
                       config->continuous_threshold, config->limit_threshold);
-    comp_torque->RB = Calc_High_End_Single_Wheel(target_omega->RB, config->a0, config->a1, config->a2,
+    output_torque->RB = Calc_High_End_Single_Wheel(target_omega->RB, config->a0, config->a1, config->a2,
                       config->continuous_threshold, config->limit_threshold);
-    comp_torque->RF = Calc_High_End_Single_Wheel(target_omega->RF, config->a0, config->a1, config->a2,
+    output_torque->RF = Calc_High_End_Single_Wheel(target_omega->RF, config->a0, config->a1, config->a2,
                       config->continuous_threshold, config->limit_threshold);
 }

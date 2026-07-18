@@ -7,6 +7,9 @@
 
 #include "alg_omni_wheel_chassis.h"
 
+//重力加速度常量
+#define GRAVITY_CONSTANT 9.81f
+
 //阻力扭矩补偿参数结构体 - 低配版
 typedef struct
 {

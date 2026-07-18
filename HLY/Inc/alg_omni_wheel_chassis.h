@@ -9,8 +9,6 @@
 
 //定义 sqrt(2)/2 常量，对应全向轮 45 度的安装夹角
 #define SQRT_2_OVER_2 0.70710678f
-//重力加速度常量
-#define GRAVITY_CONSTANT 9.81f
 
 //4轮X型全向底盘物理参数
 typedef struct
