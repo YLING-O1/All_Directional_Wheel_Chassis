@@ -335,6 +335,15 @@ static float Math_Solve_Eta(float a, float b, float c)
 /**
 * @brief 衰减电流法(标准):整体衰减所有电流项 (Maclaurin 模型)
 *
+* 单电机功率的 Maclaurin 展开公式:
+*   P_motor = k0 + k1*I + k2*w + k3*I*w + k4*I^2 + k5*w^2
+* 引入衰减系数 eta 后,单电机功率关于 eta 的一元二次方程:
+*   P_motor(eta) = A*eta^2 + B*eta + C
+*   其中: 二次项系数 A = k4 * I^2
+*         一次项系数 B = k1 * I + k3 * I * w
+*         常数项   C = k0 + k2 * w + k5 * w^2
+* 联立方程 A*eta^2 + B*eta + (C - P_target) = 0,求解 eta ∈ [0, 1]
+*
 * @param power_ctrl 功率控制结构体指针
 * @param max_power 最大功率限制
 * @param current_power 当前功率
@@ -356,7 +365,10 @@ float Calculate_Maclaurin_Current_Attenuation(Struct_Maclaurin_Power_Control* po
 
     // 2. 加法器:计算底盘允许的目标总功率
     float allowed_total_power = pid_out + referee_limit_power;
-    if (allowed_total_power < 0.0f) allowed_total_power = 0.0f;
+    if(allowed_total_power < 0.0f)
+    {
+        allowed_total_power = 0.0f;
+    }
     const Struct_Maclaurin_Estimate_Config* cfg = &(power_ctrl->estimate_config);
     float A_sum = 0.0f, B_sum = 0.0f, C_sum = 0.0f;
     const Struct_Motor_State* motors[4] =
@@ -384,12 +396,12 @@ float Calculate_Maclaurin_Current_Attenuation(Struct_Maclaurin_Power_Control* po
         return 1.0f; // 不超限,直接原样下发
     }
 
-    // 5. 超限求解 A*eta^2 + B*eta + (C - P_max) = 0
+    // 5. 超限求解 A*eta^2 + B*eta + C = P_max
     return Math_Solve_Eta(A_sum, B_sum, C_sum - allowed_total_power);
 }
 
 /**
-* @brief 衰减电流法(特殊情况):单独衰减动力学解算部分,保留其他补偿部分
+* @brief 衰减电流法(特殊情况):单独衰减动力学解算部分,保留其他补偿部分,适合极限工况（如重装上坡且功率受限）
 *
 * @param power_ctrl 功率控制结构体指针
 * @param max_power 最大功率限制
@@ -412,7 +424,10 @@ float Calculate_Maclaurin_Special_Current_Attenuation(Struct_Maclaurin_Power_Con
 
     // 2. 加法器:计算底盘允许的目标总功率
     float allowed_total_power = pid_out + referee_limit_power;
-    if (allowed_total_power < 0.0f) allowed_total_power = 0.0f;
+    if (allowed_total_power < 0.0f)
+    {
+        allowed_total_power = 0.0f;
+    }
     const Struct_Maclaurin_Estimate_Config* cfg = &(power_ctrl->estimate_config);
     float A_sum = 0.0f, B_sum = 0.0f, C_sum = 0.0f;
     const Struct_Split_Motor_State* motors[4] =
@@ -427,11 +442,10 @@ float Calculate_Maclaurin_Special_Current_Attenuation(Struct_Maclaurin_Power_Con
         float Id = motors[i]->dynamic_current;
         float Io = motors[i]->others_current;
         float w = motors[i]->omega;
-        // 对应课件公式展开合并同类项
+        // 展开合并同类项
         float Ai = cfg->k4 * Id * Id;
         float Bi = cfg->k1 * Id + cfg->k3 * Id * w + 2.0f * cfg->k4 * Id * Io;
-        float Ci = cfg->k0 + cfg->k1 * Io + cfg->k2 * w + cfg->k3 * Io * w + cfg->k4 * Io
-        * Io + cfg->k5 * w * w;
+        float Ci = cfg->k0 + cfg->k1 * Io + cfg->k2 * w + cfg->k3 * Io * w + cfg->k4 * Io * Io + cfg->k5 * w * w;
         A_sum += Ai;
         B_sum += Bi;
         C_sum += Ci;
@@ -444,7 +458,7 @@ float Calculate_Maclaurin_Special_Current_Attenuation(Struct_Maclaurin_Power_Con
         return 1.0f; // 不超限,直接原样下发
     }
 
-    // 5. 超限求解 A*eta^2 + B*eta + (C - P_max) = 0
+    // 5. 超限求解 A*eta^2 + B*eta + C = P_max
     return Math_Solve_Eta(A_sum, B_sum, C_sum - allowed_total_power);
 }
 
