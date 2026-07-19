@@ -39,8 +39,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         HLY/Src/alg_omni_wheel_chassis.c
         HLY/Inc/alg_power_management.h
         HLY/Src/alg_power_management.c
-        HLY/Src/alg_slope.c
-        HLY/Inc/alg_slope.h
+        HLY/Src/alg_slope_constrained_planner.c
+        HLY/Inc/alg_slope_constrained_planner.h
         HLY/Src/alg_filter.c
         HLY/Inc/alg_filter.h
         HLY/Inc/alg_finite_state_machine.h
@@ -73,7 +73,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         HLY/Src/alg_rotation_matrix.c
         HLY/Src/alg_omni_wheel_chassis.c
         HLY/Src/alg_power_management.c
-        HLY/Src/alg_slope.c
+        HLY/Src/alg_slope_constrained_planner.c
 )
 
 # Add include paths

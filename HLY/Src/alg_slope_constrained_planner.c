@@ -1,7 +1,7 @@
 ﻿//
 // Created by 34285 on 2026/7/16.
 //
-#include "alg_slope.h"
+#include "alg_slope_constrained_planner.h"
 
 /**
  * @brief 初始化斜坡参数
@@ -36,7 +36,10 @@ void Init_Slope(Struct_Slope* slope, float increase_value, float decrease_value,
  */
 float Get_Slope_Out(Struct_Slope* slope)
 {
-    if (slope == NULL) return 0.0f;
+    if (slope == NULL)
+    {
+        return 0.0f;
+    }
     return slope->Out;
 }
 
@@ -48,7 +51,10 @@ float Get_Slope_Out(Struct_Slope* slope)
  */
 void Set_Slope_Now_Real(Struct_Slope* slope, float now_real)
 {
-    if (slope == NULL) return;
+    if (slope == NULL)
+    {
+        return;
+    }
     slope->Now_Real = now_real;
 }
 
@@ -60,7 +66,10 @@ void Set_Slope_Now_Real(Struct_Slope* slope, float now_real)
  */
 void Set_Slope_Increase_Value(Struct_Slope* slope, float increase_value)
 {
-    if (slope == NULL) return;
+    if (slope == NULL)
+    {
+        return;
+    }
     slope->Increase_Value = increase_value;
 }
 
@@ -72,7 +81,10 @@ void Set_Slope_Increase_Value(Struct_Slope* slope, float increase_value)
  */
 void Set_Slope_Decrease_Value(Struct_Slope* slope, float decrease_value)
 {
-    if (slope == NULL) return;
+    if (slope == NULL)
+    {
+        return;
+    }
     slope->Decrease_Value = decrease_value;
 }
 
@@ -84,7 +96,10 @@ void Set_Slope_Decrease_Value(Struct_Slope* slope, float decrease_value)
  */
 void Set_Slope_Target(Struct_Slope* slope, float target)
 {
-    if (slope == NULL) return;
+    if (slope == NULL)
+    {
+        return;
+    }
     slope->Target = target;
 }
 
@@ -113,7 +128,7 @@ void Slope_TIM_Calculate_PeriodElapsedCallback(Struct_Slope* slope)
     {
         if (slope->Target > slope->Now_Planning)
         {
-            // 正值加速
+            // 正向加速
             if (fabsf(slope->Now_Planning - slope->Target) > slope->Increase_Value)
             {
                 slope->Out += slope->Increase_Value;
@@ -125,7 +140,7 @@ void Slope_TIM_Calculate_PeriodElapsedCallback(Struct_Slope* slope)
         }
         else if (slope->Target < slope->Now_Planning)
         {
-            // 正值减速
+            // 正向减速
             if (fabsf(slope->Now_Planning - slope->Target) > slope->Decrease_Value)
             {
                 slope->Out -= slope->Decrease_Value;
@@ -140,7 +155,7 @@ void Slope_TIM_Calculate_PeriodElapsedCallback(Struct_Slope* slope)
     {
         if (slope->Target < slope->Now_Planning)
         {
-            // 负值加速
+            // 反向加速
             if (fabsf(slope->Now_Planning - slope->Target) > slope->Increase_Value)
             {
                 slope->Out -= slope->Increase_Value;
@@ -152,7 +167,7 @@ void Slope_TIM_Calculate_PeriodElapsedCallback(Struct_Slope* slope)
         }
         else if (slope->Target > slope->Now_Planning)
         {
-            // 负值减速
+            // 反向减速
             if (fabsf(slope->Now_Planning - slope->Target) > slope->Decrease_Value)
             {
                 slope->Out += slope->Decrease_Value;
@@ -191,7 +206,6 @@ void Slope_TIM_Calculate_PeriodElapsedCallback(Struct_Slope* slope)
         }
     }
 
-    // 善后工作
     slope->Now_Planning = slope->Out;
 }
 

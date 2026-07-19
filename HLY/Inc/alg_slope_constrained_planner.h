@@ -16,7 +16,7 @@ typedef enum
 {
     Slope_First_REAL = 0,
     Slope_First_TARGET,
-} Enum_Slope_First;
+}Enum_Slope_First;
 
 /**
  * @brief 斜坡函数数据结构体
@@ -43,7 +43,7 @@ typedef struct
 
     // 目标值
     float Target;
-} Struct_Slope;
+}Struct_Slope;
 
 void Init_Slope(Struct_Slope* slope, float increase_value, float decrease_value, Enum_Slope_First slope_first);
 float Get_Slope_Out(Struct_Slope* slope);
@@ -52,6 +52,5 @@ void Set_Slope_Increase_Value(Struct_Slope* slope, float increase_value);
 void Set_Slope_Decrease_Value(Struct_Slope* slope, float decrease_value);
 void Set_Slope_Target(Struct_Slope* slope, float target);
 void Slope_TIM_Calculate_PeriodElapsedCallback(Struct_Slope* slope);
-
 
 #endif //ALL_DIRECTIONAL_WHEEL_CHASSIS_ALG_SLOPE_H
