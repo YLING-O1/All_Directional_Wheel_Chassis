@@ -1,12 +1,6 @@
-# All-Directional Wheel Chassis (全向轮底盘)
+# Omni_Wheel_Chassis (全向轮底盘)
 
 > 基于 STM32H723 的四轮 X 型全向移动机器人底盘控制系统，面向 RoboMaster 竞赛场景。
-
-[![Platform](https://img.shields.io/badge/platform-STM32H723xx-blue)](https://www.st.com/en/microcontrollers-microprocessors/stm32h723-733.html)
-[![Language](https://img.shields.io/badge/language-C11-orange)](#)
-[![Build](https://img.shields.io/badge/build-CMake-green)](#)
-[![IDE](https://img.shields.io/badge/IDE-CLion-purple)](#)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)](#)
 
 ---
 
@@ -26,7 +20,7 @@ HLY 库中大部分模块与底盘构型**解耦**，可直接复用于麦克纳
 
 | 模块 | 复用场景 |
 |------|----------|
-| `alg_PID` | 任意闭环控制回路 — 电机速度环/角度环、温度环、压力环等 |
+| `alg_PID` | 任意闭环控制回路 — 电机速度环，角度环，扭矩环等 |
 | `alg_filter` | 传感器信号滤波 — IMU、编码器、电流采样噪声抑制 |
 | `alg_finite_state_machine` | 机器人状态调度 — 遥控/自主切换、急停、故障保护 |
 | `alg_queue` | 滑动窗口滤波、数据缓冲、指令缓存 |
@@ -71,7 +65,7 @@ Omni_Wheel_Chassis/
 │   │   ├── alg_slope_constrained_planner.h  # 斜坡约束规划器
 │   │   ├── alg_chassis_following.h     #   底盘跟随云台控制
 │   │   ├── app_keyboard_control.h      #   键鼠控制与系统状态机
-│   │   ├── dvc_DJI_M3508.h            #   DJI M3508 电机设备驱动
+│   │   ├── dvc_DJI_M3508.h             #   DJI M3508 电机设备驱动
 │   │   ├── drv_can.h                   #   CAN 总线驱动
 │   │   ├── drv_math.h                  #   数学工具库
 │   │   └── drv_wdg.h                   #   独立看门狗驱动
@@ -97,11 +91,11 @@ Omni_Wheel_Chassis/
 ┌─────────────────────────────────────────┐
 │           Application (应用层)           │
 │   app_keyboard_control                  │
-│   键鼠策略 / 系统状态机 / 模式切换       │
+│   键鼠策略 / 系统状态机 / 模式切换          │
 ├─────────────────────────────────────────┤
 │           Algorithm (算法层)             │
-│   alg_omni_wheel_chassis  (运动学)      │
-│   alg_spin_top            (小陀螺)      │
+│   alg_omni_wheel_chassis  (运动学)       │
+│   alg_spin_top            (小陀螺)       │
 │   alg_torque_compensation (扭矩补偿)     │
 │   alg_power_management    (功率管理)     │
 │   alg_chassis_following   (底盘跟随)     │
@@ -109,14 +103,14 @@ Omni_Wheel_Chassis/
 │   alg_PID                 (PID 控制)    │
 │   alg_filter / FSM / Queue / Timer      │
 ├─────────────────────────────────────────┤
-│           Device (设备驱动层)            │
-│   dvc_DJI_M3508          (M3508 电机)   │
+│           Device (设备驱动层)             │
+│   dvc_DJI_M3508          (M3508 电机)    │
 ├─────────────────────────────────────────┤
-│           Driver (硬件抽象层)            │
-│   drv_can  /  drv_math  /  drv_wdg     │
+│           Driver (硬件抽象层)             │
+│   drv_can  /  drv_math  /  drv_wdg      │
 ├─────────────────────────────────────────┤
 │           Hardware (硬件层)              │
-│   STM32H723xx + FDCAN + TIM + IWDG     │
+│   STM32H723xx + FDCAN + TIM + IWDG      │
 └─────────────────────────────────────────┘
 ```
 
@@ -351,24 +345,6 @@ float max_torque; // 电机最大允许扭矩 (单位: N·m)
 2. **角度环**：整定 $K_P$ 使位置跟踪平滑，避免超调
 3. **前馈**：$K_F$ 可提高对动态目标的跟踪能力
 
----
-
-## 📝 开发日志
-
-| 版本 | 日期 | 更新内容 |
-|------|------|----------|
-| 1.5 | - | 基础框架搭建 |
-| 1.6 | - | PID 控制器完善 |
-| 1.7 | - | 全向底盘运动学/动力学 |
-| 1.8 | - | 功率管理 / 扭矩补偿 |
-| 1.9 | - | 键鼠策略控制 / 看门狗驱动 |
-
----
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
 ### 代码规范
 
 - 文件命名：`{层级}_{模块}.{h/c}`（如 `alg_PID.h`、`drv_can.c`）
@@ -389,4 +365,4 @@ float max_torque; // 电机最大允许扭矩 (单位: N·m)
 - [STMicroelectronics](https://www.st.com/) — STM32H7 系列 MCU 与 HAL 库
 - [DJI](https://www.dji.com/) — RoboMaster M3508 电机与 C620 电调
 - [RoboMaster](https://www.robomaster.com/) — 竞赛平台
-- RoBoWalker 战队的麻神 — 技术指导与支持
+- **中国科学技术大学 RoboWalker战队**— 开源资料
