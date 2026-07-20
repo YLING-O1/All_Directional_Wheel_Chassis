@@ -25,8 +25,8 @@ void Init_Chassis_Follow(Struct_Chassis_Follow* follow, float kp, float out_max,
 
     // 调用提供的 PID_Init 接口初始化底层控制器
     // 仅配置 Kp, out_max, d_t, dead_zone，其余 I/D/F 和高级功能参数赋 0
-    PID_Init(&follow->PID, kp, 0.0f, 0.0f, 0.0f, 0.0f,
-             out_max, d_t, dead_zone, 0.0f, 0.0f, 0.0f, PID_D_First_Disable);
+    PID_Init(&follow->PID, kp, 0.0f, 0.0f, 0.0f, 0.0f, out_max, d_t,
+             dead_zone, 0.0f, 0.0f, 0.0f, PID_D_First_Disable);
 
     // 底盘跟随的目标值始终为0
     PID_Set_Target(&follow->PID, 0.0f);
@@ -63,11 +63,11 @@ void Chassis_Follow_Calculate(Struct_Chassis_Follow* follow, float current_angle
     // 1. 角度归一化到 (-PI, PI) 范围内
     float m = fmodf(current_angle, 2.0f * PI);
 
-    if (m < -PI)
+    if(m < -PI)
     {
         m = m + 2.0f * PI;
     }
-    else if (m > PI)
+    else if(m > PI)
     {
         m = m - 2.0f * PI;
     }
@@ -77,7 +77,7 @@ void Chassis_Follow_Calculate(Struct_Chassis_Follow* follow, float current_angle
     // 2. 注入当前真实值
     PID_Set_Now(&follow->PID, m);
 
-    // 3. 执行 PID 周期计算 (PID库内部已自带死区判断和限幅处理)
+    // 3. 执行 PID 周期计算
     PID_TIM_Adjust_PeriodElapsedCallback(&follow->PID);
 
     // 4. 获取计算出的控制输出

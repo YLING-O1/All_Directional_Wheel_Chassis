@@ -55,6 +55,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         HLY/Src/alg_torque_compensation.c
         "HLY/Inc/alg_chassis_following.h"
         HLY/Src/alg_chassis_following.c
+        HLY/Inc/app_keyboard_control.h
+        HLY/Src/app_keyboard_control.c
+        HLY/Inc/drv_wdg.h
+        HLY/Src/drv_wdg.c
 )
 
 # Add STM32CubeMX generated sources
