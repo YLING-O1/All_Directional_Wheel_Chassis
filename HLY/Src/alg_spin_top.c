@@ -8,7 +8,7 @@
  *
  * @param config 小陀螺配置参数结构体指针 (包含自转角速度和前馈参数k)
  * @param gimbal_target_vel 操作手在云台坐标系下的期望目标平动速度 (通常由 WSAD 映射而来)
- * @param gimbal_yaw_angle 云台Yaw轴相对于底盘的转角 (单位: 弧度，对应课件中的 θ)
+ * @param gimbal_yaw_angle 云台Yaw轴相对于底盘的转角 (单位: 弧度，θ)
  * @param current_chassis_omega 底盘当前的实际角速度 (单位: rad/s，来自陀螺仪 Z 轴数据)
  * @param chassis_target_vel 解算后输出的底盘坐标系下的目标速度，可直接送入底盘逆运动学函数
  */
@@ -28,7 +28,7 @@ void Calculate_Spin_Top_Target_Velocity(const Struct_Spin_Top_Config* config,
     float sin_theta = sinf(comp_angle);
 
     // 3. 速度矢量的旋转变换 (云台坐标系 -> 底盘坐标系)
-    // 根据课件中给出的 Z 轴旋转矩阵变换公式:
+    // Z轴旋转矩阵变换公式:
     // [ v_cx ] = [ cos(θ)  -sin(θ) ] * [ v_gx ]
     // [ v_cy ] = [ sin(θ)   cos(θ) ] * [ v_gy ]
     chassis_target_vel->vx = cos_theta * gimbal_target_vel->vx - sin_theta * gimbal_target_vel->vy;

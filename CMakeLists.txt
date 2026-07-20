@@ -53,6 +53,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         HLY/Src/alg_spin_top.c
         HLY/Inc/alg_torque_compensation.h
         HLY/Src/alg_torque_compensation.c
+        "HLY/Inc/alg_chassis_following.h"
+        HLY/Src/alg_chassis_following.c
 )
 
 # Add STM32CubeMX generated sources
