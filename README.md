@@ -18,6 +18,40 @@
 
 ---
 
+## 🔄 跨底盘复用指南
+
+HLY 库中大部分模块与底盘构型**解耦**，可直接复用于麦克纳姆轮底盘、舵轮底盘等其他机器人平台：
+
+### ✅ 可直接复用（底盘无关）
+
+| 模块 | 复用场景 |
+|------|----------|
+| `alg_PID` | 任意闭环控制回路 — 电机速度环/角度环、温度环、压力环等 |
+| `alg_filter` | 传感器信号滤波 — IMU、编码器、电流采样噪声抑制 |
+| `alg_finite_state_machine` | 机器人状态调度 — 遥控/自主切换、急停、故障保护 |
+| `alg_queue` | 滑动窗口滤波、数据缓冲、指令缓存 |
+| `alg_timer` | 超时检测、心跳包、周期任务调度 |
+| `alg_rotation_matrix` | IMU 姿态解算、斜坡角度估计、坐标系旋转 |
+| `alg_slope_constrained_planner` | 速度/位置指令平滑 — 减少冲击、保护机械结构 |
+| `alg_power_management` | 功率估计与限制 — 适配裁判系统或电池保护板 |
+| `alg_chassis_following` | 底盘跟随云台 — 只需要输入角度差，与轮系无关 |
+| `dvc_DJI_M3508` | 任意使用 DJI M3508/M2006/GM6020 电机的机器人 |
+| `drv_can` | 任意 CAN 总线通信场景 — 不限于电机控制 |
+| `drv_math` | 通用数学工具 — 大小端转换、校验和、sinc 函数 |
+| `drv_wdg` | 独立看门狗 — STM32H7 平台通用 |
+
+### 🔧 需要适配的部分
+
+| 模块 | 原因 | 适配方法 |
+|------|------|----------|
+| `alg_omni_wheel_chassis` | 逆运动学 Jacobian 矩阵与轮系构型绑定 | **麦克纳姆轮**：替换为 4 轮麦克纳姆的 Jacobian（辊子 45° 斜向力分解）；**舵轮**：替换为 Ackermann 或独立转向模型 |
+| `alg_spin_top` | 依赖全向底盘运动学接口 | 接口设计通用（输入 $v_x, v_y, \omega$），只要底层运动学实现 `Omni_Wheel_Inverse_Kinematics` 同名接口即可无缝替换 |
+| `alg_torque_compensation` | 四轮扭矩分配需匹配底盘几何 | 修改 `Struct_Chassis_Config` 参数（轮距、轮径），坡道力矩分解逻辑通用 |
+
+> **迁移建议**：保持 HLY 的接口风格（`Struct_{模块}_Config` + `Calculate/Get/Set` 函数签名），只需替换 `alg_omni_wheel_chassis` 中的运动学 Jacobian 矩阵即可让整套代码运行在新底盘上。麦克纳姆轮替换工作量约 **1 个文件**，舵轮约 **2 个文件**。
+
+---
+
 ## 🗂️ 项目结构
 
 ```
@@ -355,7 +389,4 @@ float max_torque; // 电机最大允许扭矩 (单位: N·m)
 - [STMicroelectronics](https://www.st.com/) — STM32H7 系列 MCU 与 HAL 库
 - [DJI](https://www.dji.com/) — RoboMaster M3508 电机与 C620 电调
 - [RoboMaster](https://www.robomaster.com/) — 竞赛平台
-
----
-
-> **HLY** | Built with ❤️ for RoboMaster
+- RoBoWalker 战队的麻神 — 技术指导与支持
