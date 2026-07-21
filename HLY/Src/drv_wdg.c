@@ -5,18 +5,9 @@
 
 /**
  * @brief 喂独立看门狗
- *
+ * 注意，看门狗不可以放在TIM中断回调函数中使用
  */
 void IWDG_Independent_Feed(void)
 {
     HAL_IWDG_Refresh(&hiwdg1);
-}
-
-/**
- * @brief UART的TIM定时器中断发送回调函数
- *
- */
-void TIM_1ms_IWDG_PeriodElapsedCallback(void)
-{
-    IWDG_Independent_Feed();
 }

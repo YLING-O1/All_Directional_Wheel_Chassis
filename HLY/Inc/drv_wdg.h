@@ -9,6 +9,5 @@
 #include "iwdg.h"
 
 void IWDG_Independent_Feed(void);
-void TIM_1ms_IWDG_PeriodElapsedCallback(void);
 
 #endif //ALL_DIRECTIONAL_WHEEL_CHASSIS_DRV_WDG_H
