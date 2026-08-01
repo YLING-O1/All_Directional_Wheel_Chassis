@@ -25,7 +25,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "drv_can.h"
+#include "drv_wdg.h"
+#include "dvc_DJI_M3508.h"
+#include "alg_omni_wheel_chassis.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,6 +49,25 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+Struct_RM_Motor_M3508 LF_M3508;
+Struct_RM_Motor_M3508 LB_M3508;
+Struct_RM_Motor_M3508 RB_M3508;
+Struct_RM_Motor_M3508 RF_M3508;
+
+float LF_Torque = 0.0f;
+float LB_Torque = 0.0f;
+float RB_Torque = 0.0f;
+float RF_Torque = 0.0f;
+
+float LF_Omega = 0.0f;
+float LB_Omega = 0.0f;
+float RB_Omega = 0.0f;
+float RF_Omega = 0.0f;
+
+Struct_Chassis_Config Omni_Chassis_Config = {.r_center = 0.21f, .R = 0.0625f, .max_omega = 45.0f,
+                                             .max_torque = 2.7f};
+Struct_Target_Velocity Omni_Target_Velocity;
+Struct_Wheel_Velocity Omni_Wheel_Velocity;
 
 /* USER CODE END PV */
 
@@ -53,12 +75,65 @@
 void SystemClock_Config(void);
 static void MPU_Config(void);
 /* USER CODE BEGIN PFP */
-
+void DJI_RM_CAN_Callback(Struct_CAN_Rx_Buffer *Rx_Buffer);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void DJI_RM_CAN_Callback(Struct_CAN_Rx_Buffer *Rx_Buffer)
+{
+  switch (Rx_Buffer->Header.Identifier)
+  {
+    case (0x201):
+    {
+      DJI_M3508_CAN_RxCpltCallback(&LF_M3508, Rx_Buffer->Data);
+      LF_Omega = DJI_M3508_Get_Now_Omega(&LF_M3508);
+      LF_Torque = DJI_M3508_Get_Now_Torque(&LF_M3508);
+    }
+    break;
+    case (0x202):
+    {
+      DJI_M3508_CAN_RxCpltCallback(&LB_M3508, Rx_Buffer->Data);
+      LB_Omega = DJI_M3508_Get_Now_Omega(&LB_M3508);
+      LB_Torque = DJI_M3508_Get_Now_Torque(&LB_M3508);
+    }
+    break;
+    case (0x203):
+    {
+      DJI_M3508_CAN_RxCpltCallback(&RB_M3508, Rx_Buffer->Data);
+      RB_Omega = DJI_M3508_Get_Now_Omega(&RB_M3508);
+      RB_Torque = DJI_M3508_Get_Now_Torque(&RB_M3508);
+    }
+    break;
+    case (0x204):
+    {
+      DJI_M3508_CAN_RxCpltCallback(&RF_M3508, Rx_Buffer->Data);
+      RF_Omega = DJI_M3508_Get_Now_Omega(&RF_M3508);
+      RF_Torque = DJI_M3508_Get_Now_Torque(&RF_M3508);
+    }
+    break;
+    default:
+      break;
+  }
+}
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM3)
+  {
+    DJI_M3508_TIM_Alive_PeriodElapsedCallback(&LF_M3508);
+    DJI_M3508_TIM_Alive_PeriodElapsedCallback(&LB_M3508);
+    DJI_M3508_TIM_Alive_PeriodElapsedCallback(&RB_M3508);
+    DJI_M3508_TIM_Alive_PeriodElapsedCallback(&RF_M3508);
+
+    DJI_M3508_TIM_PID_PeriodElapsedCallback(&LF_M3508);
+    DJI_M3508_TIM_PID_PeriodElapsedCallback(&LB_M3508);
+    DJI_M3508_TIM_PID_PeriodElapsedCallback(&RB_M3508);
+    DJI_M3508_TIM_PID_PeriodElapsedCallback(&RF_M3508);
+
+    TIM_CAN_PeriodElapsedCallback();
+  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -97,13 +172,53 @@ int main(void)
   MX_TIM3_Init();
   MX_IWDG1_Init();
   /* USER CODE BEGIN 2 */
-
+  CAN_Init(&hfdcan1, DJI_RM_CAN_Callback);
+  DJI_M3508_Init(&hfdcan1, &LF_M3508, RM_Motor_ID_0x201, Control_Method_OMEGA, 3591.0f/187.0f, 3.0f);
+  DJI_M3508_Init(&hfdcan1, &LB_M3508, RM_Motor_ID_0x202, Control_Method_OMEGA, 3591.0f/187.0f, 3.0f);
+  DJI_M3508_Init(&hfdcan1, &RB_M3508, RM_Motor_ID_0x203, Control_Method_OMEGA, 3591.0f/187.0f, 3.0f);
+  DJI_M3508_Init(&hfdcan1, &RF_M3508, RM_Motor_ID_0x204, Control_Method_OMEGA, 3591.0f/187.0f, 3.0f);
+  PID_Init(&LF_M3508.PID_Omega, 5200.0f, 0.001f, 0.0f, 0.0f, 8192.0f, 8192.0f,
+           0.001f, 0.0f,5.0f, 15.0f, 0.0f, 1);
+  PID_Init(&LB_M3508.PID_Omega, 4000.0f, 0.0f, 0.0f, 0.0f, 8192.0f, 8192.0f,
+           0.001f, 0.0f, 5.0f, 15.0f, 0.0f, 1);
+  PID_Init(&RB_M3508.PID_Omega, 5000.0f, 0.0f, 0.0f, 0.0f, 8192.0f, 8192.0f,
+           0.001f, 0.0f, 5.0f, 15.0f, 0.0f, 1);
+  PID_Init(&RF_M3508.PID_Omega, 2000.0f, 0.0f, 0.0f, 0.0f, 8192.0f, 8192.0f,
+           0.001f, 0.0f, 5.0f, 15.0f, 0.0f, 1);
+  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    // Omni_Wheel_Inverse_Kinematics(&Omni_Chassis_Config, &Omni_Target_Velocity, &Omni_Wheel_Velocity);
+    //
+    // DJI_M3508_Set_Target_Omega(&LF_M3508, Omni_Wheel_Velocity.LF);
+    // DJI_M3508_Set_Target_Omega(&LB_M3508, Omni_Wheel_Velocity.LB);
+    // DJI_M3508_Set_Target_Omega(&RB_M3508, Omni_Wheel_Velocity.RB);
+    // DJI_M3508_Set_Target_Omega(&RF_M3508, Omni_Wheel_Velocity.RF);
+
+    DJI_M3508_Set_Target_Omega(&LF_M3508, 2.0f);
+    DJI_M3508_Set_Target_Omega(&LB_M3508, 2.0f);
+    DJI_M3508_Set_Target_Omega(&RB_M3508, 2.0f);
+    DJI_M3508_Set_Target_Omega(&RF_M3508, 2.0f);
+    for (uint32_t i = 0; i < 20; i++)
+    {
+      HAL_Delay(250);
+      IWDG_Independent_Feed();
+    }
+
+    DJI_M3508_Set_Target_Omega(&LF_M3508, 15.0f);
+    DJI_M3508_Set_Target_Omega(&LB_M3508, 15.0f);
+    DJI_M3508_Set_Target_Omega(&RB_M3508, 15.0f);
+    DJI_M3508_Set_Target_Omega(&RF_M3508, 15.0f);
+    for (uint32_t i = 0; i < 20; i++)
+    {
+      HAL_Delay(250);
+      IWDG_Independent_Feed();
+    }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -133,20 +248,19 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
-  RCC_OscInitStruct.HSICalibrationValue = 64;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 12;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 2;
+  RCC_OscInitStruct.PLL.PLLN = 16;
   RCC_OscInitStruct.PLL.PLLP = 1;
   RCC_OscInitStruct.PLL.PLLQ = 2;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
-  RCC_OscInitStruct.PLL.PLLFRACN = 4096;
+  RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
